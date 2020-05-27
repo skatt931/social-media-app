@@ -1,7 +1,11 @@
-// 2:56:30
+// 3:43:13
 const functions = require("firebase-functions");
 
 const app = require("express")();
+
+const {
+  db
+} = require('./util/admin');
 
 const {
   getAllScreams,
@@ -47,3 +51,75 @@ exports.helloWorld = functions.https.onRequest((request, response) => {
 });
 
 exports.api = functions.https.onRequest(app);
+
+exports.createNotificationOnLike = functions.region('europe-west2').firestore.document('likes/{id}')
+  .onCreate((snapshot) => {
+    console.log(snapshot, 'trololololool!!!!!!!!');
+    db.doc(`/screams/${snapshot.data().screamId}`)
+      .get()
+      .then(doc => {
+        if (doc.exists) {
+          return db.doc(`/notifications/${snapshot.id}`)
+            .set({
+              recepient: doc.data().userHandle,
+              sender: snapshot.data().userHandle,
+              read: false,
+              screamId: doc.id,
+              type: 'like',
+              createdAt: new Date().toISOString()
+            });
+        }
+      })
+      .then(() => {
+        return;
+      })
+      .catch(err => {
+        console.error(err);
+        return;
+      })
+  })
+
+exports.deleteNotificationOnUnlike = functions
+  .region('europe-west2')
+  .firestore
+  .document('likes/{id}')
+  .onDelete((snapshot) => {
+    db.doc(`/notifications/${snapshot.id}`)
+      .delete()
+      .then(() => {
+        return;
+      })
+      .catch(err => {
+        console.error(err);
+        return;
+      })
+  })
+
+exports.createNotificationOnComment = functions
+  .region('europe-west2')
+  .firestore
+  .document('comments/{id}')
+  .onCreate((snapshot) => {
+    db.doc(`/screams/${snapshot.data().screamId}`)
+      .get()
+      .then(doc => {
+        if (doc.exists) {
+          return db.doc(`/notifications/${snapshot.id}`)
+            .set({
+              recepient: doc.data().userHandle,
+              sender: snapshot.data().userHandle,
+              read: false,
+              screamId: doc.id,
+              type: 'comment',
+              createdAt: new Date().toISOString()
+            });
+        }
+      })
+      .then(() => {
+        return;
+      })
+      .catch(err => {
+        console.error(err);
+        return;
+      })
+  })
