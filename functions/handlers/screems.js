@@ -15,7 +15,8 @@ exports.getAllScreams = (req, res) => {
                     userHandle: doc.data().userHandle,
                     createdAt: doc.data().createdAt,
                     commentCount: doc.data().commentCount,
-                    likeCount: doc.data().likeCount
+                    likeCount: doc.data().likeCount,
+                    userImage: doc.data().userImage
                 });
             });
             return res.json(screams);
@@ -93,7 +94,7 @@ exports.getScream = (req, res) => {
 // Comment on a scream
 exports.commentOnScream = (req, res) => {
     if (req.body.body.trim() === '') res.status(400).json({
-        error: 'Must not be empy'
+        comment: 'Must not be empy'
     });
 
     const newComment = {

@@ -1,4 +1,4 @@
-// 3:43:13
+// 4:03:13
 const functions = require("firebase-functions");
 
 const app = require("express")();
@@ -24,6 +24,8 @@ const {
   uploadImage,
   addUserDetails,
   getAuthenticatedUser,
+  getUserDetails,
+  markNotificationsRead
 } = require("./handlers/users");
 
 const FBAuth = require("./util/fbAuth");
@@ -44,6 +46,8 @@ app.post("/login", login);
 app.post("/user/image", FBAuth, uploadImage);
 app.post("/user", FBAuth, addUserDetails);
 app.get("/user", FBAuth, getAuthenticatedUser);
+app.get("/user/:handle", getUserDetails);
+app.post("/notifications", FBAuth, markNotificationsRead);
 
 // // Create and Deploy Your First Cloud Functions
 exports.helloWorld = functions.https.onRequest((request, response) => {
@@ -54,11 +58,10 @@ exports.api = functions.https.onRequest(app);
 
 exports.createNotificationOnLike = functions.region('europe-west2').firestore.document('likes/{id}')
   .onCreate((snapshot) => {
-    console.log(snapshot, 'trololololool!!!!!!!!');
-    db.doc(`/screams/${snapshot.data().screamId}`)
+    return db.doc(`/screams/${snapshot.data().screamId}`)
       .get()
       .then(doc => {
-        if (doc.exists) {
+        if (doc.exists && doc.data().userHandle !== snapshot.data().userHandle) {
           return db.doc(`/notifications/${snapshot.id}`)
             .set({
               recepient: doc.data().userHandle,
@@ -70,12 +73,8 @@ exports.createNotificationOnLike = functions.region('europe-west2').firestore.do
             });
         }
       })
-      .then(() => {
-        return;
-      })
       .catch(err => {
         console.error(err);
-        return;
       })
   })
 
@@ -84,14 +83,10 @@ exports.deleteNotificationOnUnlike = functions
   .firestore
   .document('likes/{id}')
   .onDelete((snapshot) => {
-    db.doc(`/notifications/${snapshot.id}`)
+    return db.doc(`/notifications/${snapshot.id}`)
       .delete()
-      .then(() => {
-        return;
-      })
       .catch(err => {
         console.error(err);
-        return;
       })
   })
 
@@ -100,10 +95,10 @@ exports.createNotificationOnComment = functions
   .firestore
   .document('comments/{id}')
   .onCreate((snapshot) => {
-    db.doc(`/screams/${snapshot.data().screamId}`)
+    return db.doc(`/screams/${snapshot.data().screamId}`)
       .get()
       .then(doc => {
-        if (doc.exists) {
+        if (doc.exists && doc.data().userHandle !== snapshot.data().userHandle) {
           return db.doc(`/notifications/${snapshot.id}`)
             .set({
               recepient: doc.data().userHandle,
@@ -115,11 +110,7 @@ exports.createNotificationOnComment = functions
             });
         }
       })
-      .then(() => {
-        return;
-      })
       .catch(err => {
         console.error(err);
-        return;
       })
   })
